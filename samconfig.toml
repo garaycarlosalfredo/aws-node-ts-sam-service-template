@@ -1,0 +1,43 @@
+version = 0.1
+
+[default.global.parameters]
+region = "us-east-1"
+
+[default.build.parameters]
+cached = true
+parallel = true
+
+[default.validate.parameters]
+lint = true
+
+[default.deploy.parameters]
+resolve_s3 = true
+capabilities = "CAPABILITY_IAM"
+confirm_changeset = true
+fail_on_empty_changeset = false
+
+[default.local_start_api.parameters]
+port = 4040
+warm_containers = "EAGER"
+
+# Local development (`npm start`). Set Architecture by hand to match your machine:
+# x86_64 for Intel/AMD, arm64 for Apple Silicon / Linux arm64.
+# Deployed stages keep the template default (arm64).
+[development.build.parameters]
+parameter_overrides = "Stage=development Architecture=x86_64"
+
+[development.local_start_api.parameters]
+port = 4040
+warm_containers = "EAGER"
+parameter_overrides = "Stage=development Architecture=x86_64"
+
+# Deployed stages: integration and production (development is local only).
+[integration.deploy.parameters]
+stack_name = "aws-node-ts-service-integration"
+parameter_overrides = "Stage=integration"
+tags = "Service=aws-node-ts-service Environment=integration"
+
+[production.deploy.parameters]
+stack_name = "aws-node-ts-service-production"
+parameter_overrides = "Stage=production"
+tags = "Service=aws-node-ts-service Environment=production"

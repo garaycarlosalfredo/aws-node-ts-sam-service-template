@@ -18,8 +18,8 @@
     "node": ">=24.22.1 <25"
   },
   "scripts": {
-    "prepare": "husky",
-    "start": "serverless offline start --stage development --reloadHandler",
+    "prepare": "husky || true",
+    "start": "sam build --config-env development && sam local start-api --config-env development",
     "build": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
@@ -29,9 +29,9 @@
     "test": "jest --colors --passWithNoTests",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage --coverageDirectory .coverage --colors",
-    "package": "serverless package --stage development",
-    "deploy": "serverless deploy",
-    "remove": "serverless remove"
+    "package": "sam validate --lint && sam build",
+    "deploy": "sam build && sam deploy --config-env",
+    "remove": "sam delete --config-env"
   },
   "dependencies": {
     "zod": "^4.0.0"
@@ -51,10 +51,6 @@
     "jest": "^30.0.0",
     "lint-staged": "^17.3.0",
     "prettier": "^3.9.5",
-    "serverless": "^3.40.0",
-    "serverless-esbuild": "^1.57.2",
-    "serverless-offline": "^13.10.1",
-    "serverless-plugin-aws-alerts": "^1.7.5",
     "ts-jest": "^29.4.0",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.65.0"

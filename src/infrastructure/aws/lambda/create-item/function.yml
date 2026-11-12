@@ -1,6 +1,0 @@
-createItem:
-  handler: src/infrastructure/aws/lambda/create-item/lambda.handler
-  events:
-    - http:
-        method: post
-        path: items

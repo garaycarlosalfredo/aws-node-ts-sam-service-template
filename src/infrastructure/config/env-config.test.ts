@@ -14,6 +14,11 @@ describe("EnvConfig", () => {
       isProduction: false,
     });
   });
+  it("accepts the integration environment", () => {
+    expect(
+      EnvConfig.fromProcessEnv({ NODE_ENV: "integration" }).environment,
+    ).toBe("integration");
+  });
   it("accepts known values", () => {
     expect(
       EnvConfig.fromProcessEnv({

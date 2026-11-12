@@ -9,6 +9,8 @@ export default tseslint.config(
       '.build/**',
       '.coverage/**',
       '.esbuild/**',
+      '.aws-sam/**',
+      'plans/**',
       '.husky/_/**',
       '.serverless/**',
       'coverage/**',
@@ -25,7 +27,7 @@ export default tseslint.config(
       }
     },
     rules: {
-      // CommonJS config files (serverless, jest, commitlint) use require().
+      // CommonJS config files (jest, commitlint) use require().
       '@typescript-eslint/no-require-imports': 'off'
     }
   },

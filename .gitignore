@@ -150,3 +150,8 @@ vite.config.ts.timestamp-*
 
 # Work planning files
 /plans
+# AWS SAM build output
+.aws-sam/
+
+# Jest coverage output
+.coverage/

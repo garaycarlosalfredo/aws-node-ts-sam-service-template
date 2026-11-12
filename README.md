@@ -1,1 +1,1 @@
-# aws-node-ts-serverless-service-template
+# aws-node-ts-sam-service-template

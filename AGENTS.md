@@ -37,11 +37,11 @@ npm run test:coverage
 npm run package
 ```
 
-`npm run package` validates `serverless.yml` and the esbuild bundle. If it fails because of `runtimeManagement`, remove that property from `serverless.yml` and retry.
+`npm run package` runs `sam validate --lint` and `sam build` (template.yaml and the esbuild bundle).
 
 ## AWS and secrets
 
-- Do not run `serverless deploy`, `serverless remove` or any AWS command that creates, changes or deletes resources.
+- Do not run `sam deploy`, `sam delete` or any AWS command that creates, changes or deletes resources.
 - Do not read or print `.env`, credentials, tokens, SSH keys or secret managers. Use `.env.example` only.
 - Do not write secrets into notes, commits, logs or responses.
 

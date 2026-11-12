@@ -5,6 +5,7 @@ import type { LogLevel } from "@application/ports/logger.port";
 const ENVIRONMENTS = [
   "development",
   "test",
+  "integration",
   "qa",
   "staging",
   "production",

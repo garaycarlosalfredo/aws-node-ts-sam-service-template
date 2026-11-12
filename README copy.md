@@ -1,6 +1,6 @@
 # AWS Node.js + TypeScript Lambda Service Template
 
-Cost-conscious AWS Lambda template using Node.js 24, TypeScript, Serverless Framework v3, zod validation and class-based dependency injection.
+Cost-conscious AWS Lambda template using Node.js 24, TypeScript, AWS SAM, zod validation and class-based dependency injection.
 
 ## Architecture
 
@@ -37,13 +37,13 @@ These rules are enforced by ESLint (`no-restricted-imports` in `eslint.config.mj
 
 **Provider portability.** Input adapters use API Gateway types (`APIGatewayProxyEvent`, `APIGatewayProxyResult`) on purpose. Translating what the provider sends into what the application uses is exactly the job of an adapter, so these types belong in `src/adapters/in/http` (`http-controller.ts`, `http-response.ts`) and nowhere else. This is not a weakness to fix: a different provider has a different request, SDK and types, and it is served by a different adapter.
 
-Moving to GCP, Azure or any other provider (which also replaces Serverless Framework):
+Moving to GCP, Azure or any other provider (which also replaces AWS SAM):
 
 | Stays unchanged                                        | Is replaced or added                                                                 |
 | ------------------------------------------------------ | ------------------------------------------------------------------------------------ |
 | `domain` and `application`, with their tests           | Input adapters (`adapters/in/http`): provider request/response types and controllers |
 | Generic output adapters (logger, ID generator, events) | Output adapters that depend on the provider (e.g. the repository, event publisher)   |
-| `Container` (only the adapters it instantiates change) | `infrastructure` entrypoints (`aws/lambda`) and deployment config (`serverless.yml`) |
+| `Container` (only the adapters it instantiates change) | `infrastructure` entrypoints (`aws/lambda`) and deployment config (`template.yaml`)  |
 
 The zod schemas can be reused if the new input adapter keeps them. The ESLint boundaries guarantee that the core cannot depend on the provider, so replacing the adapters does not require touching it. Equivalent delivery, storage and failure semantics still need to be verified.
 
@@ -53,7 +53,14 @@ Tests live beside their subject and shared fixtures in `tests/helpers`.
 
 ## Getting started
 
-Use Node.js 24 (see `.nvmrc`) and npm:
+Requirements:
+
+- Node.js 24 (see `.nvmrc`) and npm.
+- [AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html).
+- Docker running: `sam local` executes each Lambda inside a container.
+- Lambda architecture: deployed stages use `arm64` (the `Architecture` parameter default in `template.yaml`, cheaper on AWS). `npm start` reads the `[development]` section of `samconfig.toml`, where `Architecture=x86_64` is set by hand so it runs without emulation on Intel/AMD machines. On Apple Silicon or Linux arm64, change it to `arm64`. The code is plain JavaScript, so both architectures behave the same.
+
+Run the service locally with SAM (it builds with esbuild and serves the API on port 4040):
 
 ```sh
 npm install
@@ -75,33 +82,33 @@ The example stores items in a local JSON file (`<tmp dir>/<service>-items.json`,
 Invoke the examples without starting the HTTP server:
 
 ```sh
-npx serverless invoke local --function createItem --path events/create-item.json --stage development
-npx serverless invoke local --function getItem --path events/get-item.json --stage development
-npx serverless invoke local --function removeItemStock --path events/remove-item-stock.json --stage development
+sam build && sam local invoke CreateItemFunction -e events/create-item.json
+sam local invoke GetItemFunction -e events/get-item.json
+sam local invoke RemoveItemStockFunction -e events/remove-item-stock.json
 ```
 
 ## Scripts
 
-| Command                                   | Purpose                                    |
-| ----------------------------------------- | ------------------------------------------ |
-| `npm start`                               | Run serverless-offline in development      |
-| `npm run build` / `npm run typecheck`     | Type-check without emitting files          |
-| `npm run lint` / `npm run lint:fix`       | Check / fix lint issues                    |
-| `npm run format` / `npm run format:check` | Format / check formatting                  |
-| `npm test` / `npm run test:watch`         | Run / watch Jest tests                     |
-| `npm run test:coverage`                   | Run tests with a 90% line threshold        |
-| `npm run package`                         | Build a deployment package for development |
-| `npm run deploy` / `npm run remove`       | Deploy / remove the service in AWS         |
+| Command                                   | Purpose                               |
+| ----------------------------------------- | ------------------------------------- |
+| `npm start`                               | Run `sam local start-api` (port 4040) |
+| `npm run build` / `npm run typecheck`     | Type-check without emitting files     |
+| `npm run lint` / `npm run lint:fix`       | Check / fix lint issues               |
+| `npm run format` / `npm run format:check` | Format / check formatting             |
+| `npm test` / `npm run test:watch`         | Run / watch Jest tests                |
+| `npm run test:coverage`                   | Run tests with a 90% line threshold   |
+| `npm run package`                         | Validate and build the SAM package    |
+| `npm run deploy` / `npm run remove`       | Deploy / remove the service in AWS    |
 
 ## Configuration and deployment
 
-`config/defaults.json` is merged with `config/{stage}.json`, with stage values taking precedence. The provided stages are `development` and `production`; they set region, log retention, bundling options and log level. The Lambda environment uses `NODE_ENV`, `SERVICE_NAME`, `LOG_LEVEL` and AWS-provided `AWS_REGION`. Invalid environment or log level values fall back to development and info. Lambda uses the default automatic runtime update mode so AWS can apply runtime security updates; update dependencies separately.
+The stages are `development` (local only, `npm start`), `integration` and `production` (deployed). The `StageConfig` mapping in `template.yaml` holds a `default` entry plus per-stage overrides (the `Stage` parameter selects it, falling back to `default`). It sets log retention, log level and `NODE_OPTIONS` (`--enable-source-maps` in development). The region and per-stage stack settings live in `samconfig.toml`. The Lambda environment uses `NODE_ENV`, `SERVICE_NAME`, `LOG_LEVEL` and AWS-provided `AWS_REGION`. Invalid environment or log level values fall back to development and info. Lambda uses the default automatic runtime update mode so AWS can apply runtime security updates; update dependencies separately.
 
-To deploy, configure your AWS account and credentials separately, review `serverless.yml` and `resources.yml`, then run `npx serverless deploy --stage development` or `--stage production`. Deployment creates AWS resources. Serverless Framework v3 may warn that `nodejs24.x` is not in its older runtime validation list, although packaging succeeds; verify compatibility in the target account before deployment.
+To deploy, configure your AWS account and credentials separately, review `template.yaml` and `samconfig.toml`, then run `npm run deploy -- integration` or `npm run deploy -- production` (they pick the `samconfig.toml` environment). Deployment creates AWS resources. Verify `nodejs24.x` support in the target account/region before deployment.
 
 ## Costs and alarms
 
-Lambda, API Gateway, CloudWatch Logs, deployments and other AWS resources can incur charges depending on usage and region. Default log retention is 7 days in development and 14 in production. An SSM standard parameter publishes the service URL. CloudWatch alarms are disabled by default. To enable them, uncomment the alerts plugin and `custom.alerts` block in `serverless.yml`, select stages and configure an SNS action if notifications are needed; alarms add recurring charges. X-Ray, provisioned concurrency, CORS, API keys and authorizers are not enabled.
+Lambda, API Gateway, CloudWatch Logs, deployments and other AWS resources can incur charges depending on usage and region. Default log retention is 7 days (development and integration) and 14 in production. An SSM standard parameter publishes the service URL. CloudWatch alarms are disabled by default. To enable them, add `AWS::CloudWatch::Alarm` resources to `template.yaml`, conditioned on the stages and configure an SNS action if notifications are needed; alarms add recurring charges. X-Ray, provisioned concurrency, CORS, API keys and authorizers are not enabled.
 
 ## HTTP and extension conventions
 
@@ -112,7 +119,7 @@ To add an endpoint:
 1. Put the business rules in `domain` (entities, value objects, errors); keep them independent of HTTP and AWS.
 2. Add a use case, its DTOs, its input port and any output port in `application`.
 3. Add the zod schema and controller under `src/adapters/in/http/<resource>/<function>/`, plus any output adapter in `src/adapters/out`.
-4. Wire dependencies in `Container`; add `src/infrastructure/aws/lambda/<function>/lambda.ts` and `function.yml`, and reference it from `serverless.yml`.
+4. Wire dependencies in `Container`; add `src/infrastructure/aws/lambda/<function>/lambda.ts` and declare a new `AWS::Serverless::Function` in `template.yaml`.
 5. Add tests and an example event, then run lint, build, coverage and package.
 
 Ports end in `Port`; dependencies are injected through constructors. Validate at the HTTP boundary and keep zod out of the domain and application layers.
@@ -138,10 +145,10 @@ try {
 
 ## Using this template for a new service
 
-1. **Rename the service** in `package.json` and `serverless.yml` (`service:`), and review `config/`.
+1. **Rename the service** in `package.json`, `template.yaml` and `samconfig.toml`, and review the `StageConfig` mapping.
 2. **Replace the example domain.** Rename or delete `Item`, `ItemName`, `Quantity` and the item events in `src/domain` and write your own entities, value objects and rules first, with tests.
 3. **Replace the use cases and ports** in `src/application` (`create-item`, `get-item`, `remove-item-stock`, `item-repository.port`). Keep `logger.port`, `id-generator.port` and `event-publisher.port` if you need them.
 4. **Replace the HTTP adapters** in `src/adapters/in/http/items` and update `HttpController`'s error mapping if you add new domain errors.
-5. **Swap the file repository** for a persistent adapter (see `src/adapters/out/README.md`) and add the IAM permissions in `serverless.yml`.
-6. **Rewire** `src/infrastructure/container.ts`, the Lambda folders under `src/infrastructure/aws/lambda`, the function list in `serverless.yml` and the sample events in `events/`.
+5. **Swap the file repository** for a persistent adapter (see `src/adapters/out/README.md`) and add the IAM permissions in `template.yaml`.
+6. **Rewire** `src/infrastructure/container.ts`, the Lambda folders under `src/infrastructure/aws/lambda`, the function list in `template.yaml` and the sample events in `events/`.
 7. Run `npm run lint`, `npm run build`, `npm run test:coverage` and `npm run package`.

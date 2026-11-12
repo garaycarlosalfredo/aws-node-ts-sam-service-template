@@ -1,0 +1,190 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform:
+  - AWS::LanguageExtensions
+  - AWS::Serverless-2016-10-31
+Description: aws-node-ts-service - Lambda service template (Node.js + TypeScript, hexagonal architecture)
+
+Parameters:
+  Stage:
+    Type: String
+    Default: development
+    AllowedValues: [development, integration, production]
+    Description: Deployment stage. Selects the overrides in the StageConfig mapping.
+  Architecture:
+    Type: String
+    Default: arm64
+    AllowedValues: [arm64, x86_64]
+    Description: Lambda CPU architecture. arm64 by default (cheaper). Local runs override it in samconfig.toml ([development]) to match the host machine.
+
+# Same semantics as the former config/defaults.json + config/{stage}.json merge:
+# every key falls back to the "default" entry unless the stage overrides it.
+Mappings:
+  StageConfig:
+    default:
+      LogRetentionInDays: 7
+      LogLevel: info
+      NodeOptions: ""
+    development:
+      LogLevel: debug
+      NodeOptions: --enable-source-maps
+    production:
+      LogRetentionInDays: 14
+
+Globals:
+  Function:
+    Runtime: nodejs24.x
+    Architectures: [!Ref Architecture]
+    MemorySize: 256
+    Timeout: 30
+    Environment:
+      Variables:
+        NODE_ENV: !Ref Stage
+        SERVICE_NAME: aws-node-ts-service
+        LOG_LEVEL:
+          !FindInMap [
+            StageConfig,
+            !Ref Stage,
+            LogLevel,
+            DefaultValue: !FindInMap [StageConfig, default, LogLevel],
+          ]
+        NODE_OPTIONS:
+          !FindInMap [
+            StageConfig,
+            !Ref Stage,
+            NodeOptions,
+            DefaultValue: !FindInMap [StageConfig, default, NodeOptions],
+          ]
+  Api:
+    EndpointConfiguration: REGIONAL
+
+Resources:
+  ApiGateway:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub aws-node-ts-service-${Stage}
+      StageName: !Ref Stage
+      EndpointConfiguration:
+        Type: REGIONAL
+      Tags:
+        Service: aws-node-ts-service
+        Environment: !Ref Stage
+
+  CreateItemFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub aws-node-ts-service-${Stage}-createItem
+      CodeUri: .
+      Handler: lambda.handler
+      Events:
+        Http:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Method: post
+            Path: /items
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Format: cjs
+        Target: es2022
+        Minify: true
+        Sourcemap: true
+        External: ["@aws-sdk/*"]
+        EntryPoints: [src/infrastructure/aws/lambda/create-item/lambda.ts]
+
+  GetItemFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub aws-node-ts-service-${Stage}-getItem
+      CodeUri: .
+      Handler: lambda.handler
+      Events:
+        Http:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Method: get
+            Path: /items/{id}
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Format: cjs
+        Target: es2022
+        Minify: true
+        Sourcemap: true
+        External: ["@aws-sdk/*"]
+        EntryPoints: [src/infrastructure/aws/lambda/get-item/lambda.ts]
+
+  RemoveItemStockFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub aws-node-ts-service-${Stage}-removeItemStock
+      CodeUri: .
+      Handler: lambda.handler
+      Events:
+        Http:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Method: post
+            Path: /items/{id}/remove-stock
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Format: cjs
+        Target: es2022
+        Minify: true
+        Sourcemap: true
+        External: ["@aws-sdk/*"]
+        EntryPoints: [src/infrastructure/aws/lambda/remove-item-stock/lambda.ts]
+
+  CreateItemLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${CreateItemFunction}
+      RetentionInDays:
+        !FindInMap [
+          StageConfig,
+          !Ref Stage,
+          LogRetentionInDays,
+          DefaultValue: !FindInMap [StageConfig, default, LogRetentionInDays],
+        ]
+
+  GetItemLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${GetItemFunction}
+      RetentionInDays:
+        !FindInMap [
+          StageConfig,
+          !Ref Stage,
+          LogRetentionInDays,
+          DefaultValue: !FindInMap [StageConfig, default, LogRetentionInDays],
+        ]
+
+  RemoveItemStockLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${RemoveItemStockFunction}
+      RetentionInDays:
+        !FindInMap [
+          StageConfig,
+          !Ref Stage,
+          LogRetentionInDays,
+          DefaultValue: !FindInMap [StageConfig, default, LogRetentionInDays],
+        ]
+
+  ServiceURLSSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub /${Stage}/lambda/services/aws-node-ts-service
+      Type: String
+      Value: !Sub https://${ApiGateway}.execute-api.${AWS::Region}.${AWS::URLSuffix}/${Stage}
+
+  # Alarms (previously commented out in serverless.yml): add AWS::CloudWatch::Alarm
+  # resources for Errors/Throttles with a Condition on Stage == production when needed.
+
+Outputs:
+  ApiUrl:
+    Description: Base URL of the REST API
+    Value: !Sub https://${ApiGateway}.execute-api.${AWS::Region}.${AWS::URLSuffix}/${Stage}
