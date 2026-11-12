@@ -154,7 +154,7 @@ vite.config.ts.timestamp-*
 .aws-sam/
 
 # Test coverage output
-.coverage/
+.coverage
 
 # Open Spect
 openspec

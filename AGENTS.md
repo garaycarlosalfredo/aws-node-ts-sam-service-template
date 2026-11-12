@@ -45,6 +45,16 @@ npm run package
 - Do not read or print `.env`, credentials, tokens, SSH keys or secret managers. Use `.env.example` only.
 - Do not write secrets into notes, commits, logs or responses.
 
+## Temporary overrides
+
+- `package.json` pins `minimatch` `^11.0.8` through npm `overrides`. Reason: GHSA-g3hv-75wg-m249 (minimatch <11.0.1, DoS via globpart amplification) reaches the dev toolchain through `eslint` and `typescript-eslint`, and both still declare `minimatch ^10` upstream, so no direct version bump fixes the audit. The `//overrides` key in `package.json` carries the same note.
+- Exit condition: when `npm view eslint dependencies.minimatch` (and the same for `typescript-eslint`) reports `^11` or better:
+  1. Remove `overrides.minimatch` and the `//overrides` key from `package.json`.
+  2. Run `npm install`, `npm audit` and `npm ls minimatch` (no copies below 11.0.1).
+  3. Run `npm run lint`, `npm run build`, `npm run test:coverage`, `npm run package`.
+  4. Remove this section and close `plans/01-eslint-minimatch.md`.
+- Do not add new `overrides` entries without a recorded decision.
+
 ## Design rules
 
 - Hexagonal architecture with DDD: `domain` depends on nothing; `application` depends only on `domain`; `adapters` depend on `application` and `domain`; `infrastructure` wires everything.
