@@ -1,0 +1,11 @@
+{
+  "httpMethod": "POST",
+  "path": "/items",
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": "{\"name\":\"Widget\",\"stock\":5}",
+  "requestContext": {
+    "requestId": "local-create-item-invoke"
+  }
+}

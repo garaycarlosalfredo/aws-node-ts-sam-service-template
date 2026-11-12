@@ -1,0 +1,11 @@
+{
+  "aws": {
+    "region": "us-east-1",
+    "logRetentionInDays": 7
+  },
+  "esbuild": {
+    "minify": true,
+    "sourcemap": false
+  },
+  "logLevel": "info"
+}

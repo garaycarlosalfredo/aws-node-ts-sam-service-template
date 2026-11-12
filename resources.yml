@@ -1,0 +1,18 @@
+# Publishes the service URL as an SSM Parameter (standard tier: free within
+# the first 10,000 parameters) so other services can discover this API
+# without hardcoding URLs.
+ServiceURLSSM:
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: /${self:provider.stage}/lambda/services/${self:service}
+    Type: String
+    Value:
+      Fn::Join:
+        - ""
+        - - https://
+          - Ref: ApiGatewayRestApi
+          - .execute-api.
+          - Ref: AWS::Region
+          - .
+          - Ref: AWS::URLSuffix
+          - /${self:provider.stage}

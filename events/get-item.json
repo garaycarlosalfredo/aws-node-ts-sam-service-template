@@ -1,0 +1,10 @@
+{
+  "httpMethod": "GET",
+  "path": "/items/item-1",
+  "pathParameters": {
+    "id": "item-1"
+  },
+  "requestContext": {
+    "requestId": "local-get-item-invoke"
+  }
+}

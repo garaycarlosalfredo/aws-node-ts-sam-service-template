@@ -1,0 +1,14 @@
+{
+  "httpMethod": "POST",
+  "path": "/items/item-1/remove-stock",
+  "headers": {
+    "content-type": "application/json"
+  },
+  "pathParameters": {
+    "id": "item-1"
+  },
+  "body": "{\"amount\":2}",
+  "requestContext": {
+    "requestId": "local-remove-item-stock-invoke"
+  }
+}

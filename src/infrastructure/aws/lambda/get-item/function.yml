@@ -1,0 +1,6 @@
+getItem:
+  handler: src/infrastructure/aws/lambda/get-item/lambda.handler
+  events:
+    - http:
+        method: get
+        path: items/{id}

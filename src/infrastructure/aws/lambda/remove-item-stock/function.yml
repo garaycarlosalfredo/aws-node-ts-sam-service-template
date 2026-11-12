@@ -1,0 +1,6 @@
+removeItemStock:
+  handler: src/infrastructure/aws/lambda/remove-item-stock/lambda.handler
+  events:
+    - http:
+        method: post
+        path: items/{id}/remove-stock
