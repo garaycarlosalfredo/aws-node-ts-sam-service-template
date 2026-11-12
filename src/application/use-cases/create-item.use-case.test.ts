@@ -1,3 +1,5 @@
+import { vi, type MockedObject } from "vitest";
+
 import { ValidationError } from "@domain/errors";
 import { ItemCreated } from "@domain/events";
 import type { Item } from "@domain/models/item";
@@ -8,14 +10,14 @@ import type { ItemRepositoryPort } from "../ports/item-repository.port";
 import { CreateItemUseCase } from "./create-item.use-case";
 
 describe("CreateItemUseCase", () => {
-  const items: jest.Mocked<ItemRepositoryPort> = {
-    findById: jest.fn(),
-    save: jest.fn(),
+  const items: MockedObject<ItemRepositoryPort> = {
+    findById: vi.fn(),
+    save: vi.fn(),
   };
-  const idGenerator: jest.Mocked<IdGeneratorPort> = {
-    generate: jest.fn().mockReturnValue("id-1"),
+  const idGenerator: MockedObject<IdGeneratorPort> = {
+    generate: vi.fn().mockReturnValue("id-1"),
   };
-  const events: jest.Mocked<EventPublisherPort> = { publish: jest.fn() };
+  const events: MockedObject<EventPublisherPort> = { publish: vi.fn() };
   const useCase = new CreateItemUseCase(items, idGenerator, events);
 
   it("creates an active item, stores it and returns its output", async () => {

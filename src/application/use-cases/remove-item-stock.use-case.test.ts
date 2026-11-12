@@ -1,3 +1,5 @@
+import { vi, type MockedObject } from "vitest";
+
 import { NotFoundError, ValidationError } from "@domain/errors";
 import { ItemStockDepleted } from "@domain/events";
 import { Item } from "@domain/models/item";
@@ -9,11 +11,11 @@ import type { ItemRepositoryPort } from "../ports/item-repository.port";
 import { RemoveItemStockUseCase } from "./remove-item-stock.use-case";
 
 describe("RemoveItemStockUseCase", () => {
-  const items: jest.Mocked<ItemRepositoryPort> = {
-    findById: jest.fn(),
-    save: jest.fn(),
+  const items: MockedObject<ItemRepositoryPort> = {
+    findById: vi.fn(),
+    save: vi.fn(),
   };
-  const events: jest.Mocked<EventPublisherPort> = { publish: jest.fn() };
+  const events: MockedObject<EventPublisherPort> = { publish: vi.fn() };
   const useCase = new RemoveItemStockUseCase(items, events);
   // Items come back from the repository restored, i.e. without pending events.
   const existingItem = (stock: number): Item =>

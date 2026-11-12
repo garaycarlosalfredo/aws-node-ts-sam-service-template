@@ -27,7 +27,7 @@ export default tseslint.config(
       }
     },
     rules: {
-      // CommonJS config files (jest, commitlint) use require().
+      // CommonJS config files (commitlint) use require().
       '@typescript-eslint/no-require-imports': 'off'
     }
   },

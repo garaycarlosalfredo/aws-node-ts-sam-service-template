@@ -153,5 +153,8 @@ vite.config.ts.timestamp-*
 # AWS SAM build output
 .aws-sam/
 
-# Jest coverage output
+# Test coverage output
 .coverage/
+
+# Open Spect
+openspec

@@ -1,13 +1,14 @@
 import type { APIGatewayProxyEvent } from "aws-lambda";
+import { vi } from "vitest";
 
 import { CreateItemController } from "./create-item.controller";
 
 describe("CreateItemController", () => {
   const logger = {
-    debug: jest.fn(),
-    info: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
   };
   const output = {
     id: "id-1",
@@ -15,7 +16,7 @@ describe("CreateItemController", () => {
     stock: 5,
     status: "active" as const,
   };
-  const useCase = { execute: jest.fn().mockResolvedValue(output) };
+  const useCase = { execute: vi.fn().mockResolvedValue(output) };
   const event = (body: unknown): APIGatewayProxyEvent =>
     ({
       body: JSON.stringify(body),

@@ -1,4 +1,5 @@
 import type { APIGatewayProxyEvent, Context } from "aws-lambda";
+import { vi } from "vitest";
 import { z } from "zod";
 import {
   DomainError,
@@ -43,10 +44,10 @@ class TestController extends HttpController<
 
 describe("HttpController", () => {
   const logger = {
-    debug: jest.fn(),
-    info: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
   };
   const event = (body: string | null): APIGatewayProxyEvent =>
     ({

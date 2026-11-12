@@ -1,4 +1,5 @@
 import type { APIGatewayProxyEvent } from "aws-lambda";
+import { vi } from "vitest";
 
 import { InvalidStateError, ValidationError } from "@domain/errors";
 
@@ -6,10 +7,10 @@ import { RemoveItemStockController } from "./remove-item-stock.controller";
 
 describe("RemoveItemStockController", () => {
   const logger = {
-    debug: jest.fn(),
-    info: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
   };
   const output = {
     id: "id-1",
@@ -17,7 +18,7 @@ describe("RemoveItemStockController", () => {
     stock: 3,
     status: "active" as const,
   };
-  const useCase = { execute: jest.fn() };
+  const useCase = { execute: vi.fn() };
   const event = (
     pathParameters: Record<string, string> | null,
     body: unknown,

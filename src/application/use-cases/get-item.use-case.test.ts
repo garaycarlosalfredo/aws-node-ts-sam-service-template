@@ -1,3 +1,5 @@
+import { vi, type MockedObject } from "vitest";
+
 import { NotFoundError } from "@domain/errors";
 import { Item } from "@domain/models/item";
 import { ItemName } from "@domain/models/item-name";
@@ -7,9 +9,9 @@ import type { ItemRepositoryPort } from "../ports/item-repository.port";
 import { GetItemUseCase } from "./get-item.use-case";
 
 describe("GetItemUseCase", () => {
-  const items: jest.Mocked<ItemRepositoryPort> = {
-    findById: jest.fn(),
-    save: jest.fn(),
+  const items: MockedObject<ItemRepositoryPort> = {
+    findById: vi.fn(),
+    save: vi.fn(),
   };
   const useCase = new GetItemUseCase(items);
 
